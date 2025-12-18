@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto Hotel - Grupo 3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            width: 100%;
+            padding: 20px 0;
+            text-align: center;
+        }
+        main {
+            max-width: 800px;
+            margin: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        p {
+            line-height: 1.6;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 60%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Proyecto Grupal: Sistema de Gestión de Hotel</h1>
+    <p>Realizado por el Grupo 3</p>
+</header>
+
+<main>
+    <h2>Descripción del Proyecto</h2>
+    <p>
+        Este proyecto es un sistema de gestión para hoteles, desarrollado en C++ con interfaz interactiva. 
+        Permite registrar clientes, gestionar reservas, administrar habitaciones, controlar membresías y generar reportes diarios.
+        Está diseñado para ser utilizado por el personal del hotel y mejorar la eficiencia en la gestión de operaciones diarias.
+    </p>
+
+    <div class="btn-container">
+        <input type="text" id="projectLink" placeholder="https://github.com/AnaMaydana/proyectoSFprog3/blob/main/programacion.cpp">
+        <button onclick="openProject()">Abrir Proyecto</button>
+    </div>
+</main>
+
+<script>
+    function openProject() {
+        const link = document.getElementById('projectLink').value;
+        if (link) {
+            window.open(link, '_blank');
+        } else {
+            alert("Por favor, ingresa un enlace válido de tu proyecto.");
+        }
+    }
+</script>
+
+</body>
+</html>
