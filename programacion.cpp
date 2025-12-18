@@ -2,255 +2,369 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
-// =======================================================
-// CLASE LIBRO
-// =======================================================
-class Libro {
+using namespace std;
+
+//=================================================
+// FECHA
+//=================================================
+struct Fecha {
+    int dia;
+    int mes;
+    int anio;
+};
+
+bool leerFecha(Fecha &f) {
+    char s1, s2;
+    cin >> f.dia >> s1 >> f.mes >> s2 >> f.anio;
+    return (s1 == '/' && s2 == '/' &&
+            f.dia >= 1 && f.dia <= 31 &&
+            f.mes >= 1 && f.mes <= 12 &&
+            f.anio >= 2025);
+}
+
+bool fechaMayor(const Fecha& e, const Fecha& s) {
+    if (e.anio != s.anio) return e.anio > s.anio;
+    if (e.mes != s.mes)   return e.mes > s.mes;
+    return e.dia > s.dia;
+}
+
+//=================================================
+// CLIENTE 
+//=================================================
+class Cliente {
 private:
-    std::string titulo;
-    std::string autor;
-    std::string isbn;
+    int id;
+    string nombre;
+    string telefono;
+public:
+    Cliente(int i, const string& n, const string& t)
+    : id(i), nombre(n), telefono(t) {}
+
+    int getId() const { return id; }
+    string getNombre() const { return nombre; }
+    string getTelefono() const { return telefono; }
+
+    void mostrar() const {
+        cout << "ID: " << id
+        << " | Nombre: " << nombre
+        << " | Tel: " << telefono
+        << endl;
+    }
+};
+
+//=================================================
+// HABITACION
+//=================================================
+class Habitacion {
+private:
+    int numero;
+    string tipo;
+    double precio;
     bool disponible;
 
 public:
-    Libro(const std::string& t, const std::string& a, const std::string& i)
-        : titulo(t), autor(a), isbn(i), disponible(true) {}
+    Habitacion(int n, const string& t, double p)
+    : numero(n), tipo(t), precio(p), disponible(true) {}
 
-    std::string getTitulo() const { return titulo; }
-    std::string getAutor() const { return autor; }
-    std::string getIsbn() const { return isbn; }
+    int getNumero() const { return numero; }
+    string getTipo() const { return tipo; }
+    double getPrecio() const { return precio; }
     bool estaDisponible() const { return disponible; }
-
-    void setDisponible(bool estado) { disponible = estado; }
+    void setDisponible(bool e){ disponible = e;}
 
     void mostrar() const {
-        std::cout << "ISBN: " << isbn
-                  << " | Titulo: " << titulo
-                  << " | Autor: " << autor
-                  << " | Estado: "
-                  << (disponible ? "Disponible" : "Prestado") << std::endl;
+        cout << "Hab " << numero
+        << " | Tipo: " << tipo
+        << " | $" << precio
+        << " | Estado: " << (disponible?"Libre":"Ocupada")
+        << endl;
     }
 };
 
-// =======================================================
-// CLASE SOCIO
-// =======================================================
-class Socio {
+//=================================================
+// RESERVA
+//=================================================
+class Reserva {
 private:
-    std::string nombre;
-    int id;
-    std::vector<std::string> librosPrestados;
+    int idCliente;
+    int numHab;
+    Fecha entrada;
+    Fecha salida;
 
 public:
-    Socio(const std::string& n, int i) : nombre(n), id(i) {}
+    Reserva(int c, int h, Fecha en, Fecha sa)
+    : idCliente(c), numHab(h), entrada(en), salida(sa) {}
 
-    int getId() const { return id; }
-    std::string getNombre() const { return nombre; }
-
-    void prestarLibro(const std::string& isbn) {
-        librosPrestados.push_back(isbn);
-    }
-
-    bool tieneLibro(const std::string& isbn) const {
-        return std::find(librosPrestados.begin(),
-                         librosPrestados.end(),
-                         isbn) != librosPrestados.end();
-    }
-
-    void devolverLibro(const std::string& isbn) {
-        auto it = std::find(librosPrestados.begin(),
-                            librosPrestados.end(),
-                            isbn);
-        if (it != librosPrestados.end())
-            librosPrestados.erase(it);
-    }
+    int getHab() const { return numHab; }
+    int getIdCliente() const { return idCliente; }
 
     void mostrar() const {
-        std::cout << "ID: " << id
-                  << " | Nombre: " << nombre
-                  << " | Libros: ";
-        if (librosPrestados.empty())
-            std::cout << "Ninguno";
-        else
-            for (const auto& l : librosPrestados)
-                std::cout << l << " ";
-        std::cout << std::endl;
+        cout << "Cliente: " << idCliente
+        << " | Hab: " << numHab
+        << " | Entrada: " << entrada.dia << "/" 
+        << entrada.mes << "/" << entrada.anio
+        << " | Salida: " << salida.dia << "/"
+        << salida.mes << "/" << salida.anio
+        << endl;
     }
 };
 
-// =======================================================
-// CLASE BIBLIOTECA
-// =======================================================
-class Biblioteca {
+//=================================================
+// HOTEL
+//=================================================
+class Hotel {
 private:
-    // ******* MANEJO DINÁMICO DE MEMORIA *******
-    // Vectores que almacenan PUNTEROS a objetos creados dinámicamente
-    std::vector<Libro*> catalogo;
-    std::vector<Socio*> socios;
+    vector<Habitacion*> habitaciones;
+    vector<Cliente*> clientes;
+    vector<Reserva*> reservas;
 
-    // ******* USO DE PUNTEROS *******
-    Libro* buscarLibro(const std::string& isbn) {
-        for (Libro* l : catalogo) {
-            if (l->getIsbn() == isbn)
-                return l;
-        }
+public:
+    Hotel() { cargarHabitacionesIniciales(); }
+
+    ~Hotel() {
+        for(auto x: habitaciones) delete x;
+        for(auto x: clientes) delete x;
+        for(auto x: reservas) delete x;
+    }
+
+    Habitacion* buscarHab(int n){
+        for(auto h: habitaciones)
+            if(h->getNumero()==n) return h;
         return nullptr;
     }
 
-    // ******* USO DE PUNTEROS *******
-    Socio* buscarSocio(int id) {
-        for (Socio* s : socios) {
-            if (s->getId() == id)
-                return s;
-        }
+    Cliente* buscarCliente(int id){
+        for(auto c: clientes)
+            if(c->getId()==id) return c;
         return nullptr;
     }
 
-public:
-    // ******* LIBERACIÓN DE MEMORIA DINÁMICA *******
-    // Destructor que libera la memoria reservada con new
-    ~Biblioteca() {
-        for (Libro* l : catalogo)
-            delete l;
-
-        for (Socio* s : socios)
-            delete s;
+    //=================================================
+    // CARGAS INICIALES (CONSTRUCTOR)
+    //=================================================
+    void cargarHabitacionesIniciales() {
+        habitaciones.push_back(new Habitacion(101,"Simple",100));
+        habitaciones.push_back(new Habitacion(102,"Simple",100));
+        habitaciones.push_back(new Habitacion(201,"Doble",200));
+        habitaciones.push_back(new Habitacion(202,"Doble",200));
+        habitaciones.push_back(new Habitacion(301,"Suite",350));
+        habitaciones.push_back(new Habitacion(302,"Suite",350));
+        cargarHabitaciones();
+        cargarClientes();
+        cargarReservas();
     }
 
-    void agregarLibro() {
-        std::string t, a, i;
-        std::cin.ignore();
-        std::cout << "Titulo: "; getline(std::cin, t);
-        std::cout << "Autor: "; getline(std::cin, a);
-        std::cout << "ISBN: "; getline(std::cin, i);
-
-        if (buscarLibro(i)) {
-            std::cout << "ERROR: ISBN duplicado\n";
-            return;
-        }
-
-        // ******* ASIGNACIÓN DINÁMICA DE MEMORIA *******
-        Libro* nuevoLibro = new Libro(t, a, i);
-        catalogo.push_back(nuevoLibro);
-
-        std::cout << "Libro agregado correctamente\n";
+    //=================================================
+    // MOSTRAR
+    //=================================================
+    void mostrarHabitaciones(){
+        for(auto x: habitaciones) x->mostrar();
     }
 
-    void registrarSocio() {
-        std::string n;
+    void mostrarClientes(){
+        for(auto x: clientes) x->mostrar();
+    }
+
+    void mostrarReservas(){
+        for(auto x: reservas) x->mostrar();
+    }
+
+    //=================================================
+    // REGISTRO CLIENTE + GUARDADO
+    //=================================================
+    void registrarCliente() {
+        string nom, tel;
         int id;
-        std::cin.ignore();
-        std::cout << "Nombre: "; getline(std::cin, n);
-        std::cout << "ID: "; std::cin >> id;
 
-        if (buscarSocio(id)) {
-            std::cout << "ERROR: ID duplicado\n";
+        cin.ignore();
+        cout<<"Nombre: "; getline(cin, nom);
+        cout<<"Telefono: "; getline(cin, tel);
+        cout<<"ID: "; cin>>id;
+
+        if(buscarCliente(id)){
+            cout<<"ERROR ID existe\n";
             return;
         }
 
-        // ******* ASIGNACIÓN DINÁMICA DE MEMORIA *******
-        Socio* nuevoSocio = new Socio(n, id);
-        socios.push_back(nuevoSocio);
+        Cliente* c = new Cliente(id,nom,tel);
+        clientes.push_back(c);
 
-        std::cout << "Socio registrado correctamente\n";
+        ofstream arch("clientes.txt", ios::app);
+        arch<<id<<","<<nom<<","<<tel<<"\n";
+        arch.close();
+
+        cout<<"Cliente registrado.\n";
     }
 
-    void prestarLibro() {
-        std::string isbn;
-        int id;
-        std::cin.ignore();
-        std::cout << "ISBN: "; getline(std::cin, isbn);
-        std::cout << "ID Socio: "; std::cin >> id;
+    //=================================================
+    // RESERVA + GUARDADO
+    //=================================================
+    void reservar() {
+        int id, num;
+        Fecha fe, fs;
 
-        Libro* l = buscarLibro(isbn);
-        Socio* s = buscarSocio(id);
+        cout<<"ID cliente: "; cin>>id;
+        Cliente* c = buscarCliente(id);
 
-        if (!l || !s) {
-            std::cout << "ERROR: Libro o socio no existe\n";
+        if(!c){ cout<<"No existe\n"; return; }
+
+        mostrarHabitaciones();
+
+        cout<<"Num Hab: "; cin>>num;
+        Habitacion* h = buscarHab(num);
+
+        if(!h || !h->estaDisponible()){
+            cout<<"No disponible\n";
             return;
         }
 
-        if (!l->estaDisponible()) {
-            std::cout << "Libro no disponible\n";
+        cout<<"Entrada dd/mm/aaaa: ";
+        if(!leerFecha(fe)) return;
+
+        cout<<"Salida dd/mm/aaaa: ";
+        if(!leerFecha(fs)) return;
+
+        if(fechaMayor(fe,fs)){
+            cout<<"Error fechas\n";
             return;
         }
 
-        l->setDisponible(false);
-        s->prestarLibro(isbn);
+        Reserva* r = new Reserva(id,num,fe,fs);
+        reservas.push_back(r);
+        h->setDisponible(false);
 
-        std::cout << "Prestamo exitoso\n";
+        guardarHabitaciones();
+
+        ofstream arch("reservas.txt", ios::app);
+        arch<<id<<","<<num<<","
+        <<fe.dia<<"/"<<fe.mes<<"/"<<fe.anio<<","
+        <<fs.dia<<"/"<<fs.mes<<"/"<<fs.anio<<"\n";
+        arch.close();
+
+        cout<<"Reserva OK\n";
     }
 
-    void devolverLibro() {
-        std::string isbn;
-        int id;
-        std::cin.ignore();
-        std::cout << "ISBN: "; getline(std::cin, isbn);
-        std::cout << "ID Socio: "; std::cin >> id;
+    //=================================================
+    // CANCELAR
+    //=================================================
+    void cancelar() {
+        int num;
+        cout<<"Num hab cancelar: ";
+        cin>>num;
 
-        Libro* l = buscarLibro(isbn);
-        Socio* s = buscarSocio(id);
+        auto it = find_if(reservas.begin(), reservas.end(),
+        [num](Reserva* r){ return r->getHab()==num; });
 
-        if (!l || !s) {
-            std::cout << "ERROR: Libro o socio no existe\n";
-            return;
+        if(it==reservas.end()){
+            cout<<"NO existe\n"; return;
         }
 
-        // ******* ROBUSTEZ / MANEJO DE ERRORES *******
-        if (!s->tieneLibro(isbn)) {
-            std::cout << "ERROR: El socio no tiene ese libro\n";
-            return;
+        buscarHab(num)->setDisponible(true);
+        delete *it;
+        reservas.erase(it);
+        guardarHabitaciones();
+
+        cout<<"Cancelada.\n";
+    }
+
+    //=================================================
+    // ARCHIVOS
+    //=================================================
+    void cargarClientes(){
+        ifstream arch("clientes.txt");
+        if(!arch.is_open()) return;
+
+        string linea;
+        while(getline(arch,linea)){
+            string nom,tel;
+            int id;
+
+            stringstream ss(linea);
+
+            ss>>id;
+            ss.ignore();
+            getline(ss,nom,',');
+            getline(ss,tel);
+
+            clientes.push_back(new Cliente(id,nom,tel));
         }
-
-        l->setDisponible(true);
-        s->devolverLibro(isbn);
-
-        std::cout << "Devolucion registrada correctamente\n";
     }
 
-    void mostrarLibros() const {
-        for (Libro* l : catalogo)
-            l->mostrar();
+    void guardarHabitaciones(){
+        ofstream arch("habitaciones.txt");
+        for(auto h: habitaciones){
+            arch<<h->getNumero()<<","<<h->estaDisponible()<<"\n";
+        }
     }
 
-    void mostrarSocios() const {
-        for (Socio* s : socios)
-            s->mostrar();
+    void cargarHabitaciones(){
+        ifstream arch("habitaciones.txt");
+        if(!arch.is_open()) return;
+
+        int n, d;
+        char c;
+
+        while(arch>>n>>c>>d){
+            Habitacion* h = buscarHab(n);
+            if(h) h->setDisponible(d);
+        }
+    }
+
+    void cargarReservas(){
+        ifstream arch("reservas.txt");
+        if(!arch.is_open()) return;
+
+        string linea;
+        while(getline(arch,linea)){
+
+            stringstream ss(linea);
+
+            int id, num;
+            Fecha fe,fs;
+            char c1,c2,c3,c4;
+
+            ss>>id>>c1>>num>>c2
+            >>fe.dia>>c3>>fe.mes>>c4>>fe.anio
+            >>c1
+            >>fs.dia>>c3>>fs.mes>>c4>>fs.anio;
+
+            reservas.push_back(new Reserva(id,num,fe,fs));
+            buscarHab(num)->setDisponible(false);
+        }
     }
 };
 
-// =======================================================
-// MAIN – INTERFAZ DE USUARIO POR CONSOLA
-// =======================================================
+//=================================================
+// MAIN
+//=================================================
 int main() {
-    Biblioteca biblio;
-    int opcion;
+    Hotel h;
+    
+    int op;
+    do{
+        cout<<"\n--- HOTEL MENU ---\n";
+        cout<<"1 Registrar Cliente\n";
+        cout<<"2 Mostrar Clientes\n";
+        cout<<"3 Mostrar Habitaciones\n";
+        cout<<"4 Reservar\n";
+        cout<<"5 Cancelar Reserva\n";
+        cout<<"6 Mostrar Reservas\n";
+        cout<<"0 Salir\nOpcion: ";
+        cin>>op;
 
-    // ******* INTERFAZ DE USUARIO (CUERPO DEL SISTEMA) *******
-    do {
-        std::cout << "\n--- MENU BIBLIOTECA ---\n";
-        std::cout << "1. Agregar libro\n";
-        std::cout << "2. Registrar socio\n";
-        std::cout << "3. Prestar libro\n";
-        std::cout << "4. Devolver libro\n";
-        std::cout << "5. Mostrar libros\n";
-        std::cout << "6. Mostrar socios\n";
-        std::cout << "0. Salir\n";
-        std::cout << "Opcion: ";
-        std::cin >> opcion;
-
-        switch (opcion) {
-            case 1: biblio.agregarLibro(); break;
-            case 2: biblio.registrarSocio(); break;
-            case 3: biblio.prestarLibro(); break;
-            case 4: biblio.devolverLibro(); break;
-            case 5: biblio.mostrarLibros(); break;
-            case 6: biblio.mostrarSocios(); break;
-            case 0: std::cout << "Saliendo del sistema...\n"; break;
-            default: std::cout << "Opcion invalida\n";
+        switch(op){
+            case 1: h.registrarCliente(); break;
+            case 2: h.mostrarClientes(); break;
+            case 3: h.mostrarHabitaciones(); break;
+            case 4: h.reservar(); break;
+            case 5: h.cancelar(); break;
+            case 6: h.mostrarReservas(); break;
+            case 0: cout<<"datos guardados \n"; break;
+            default: cout<<"Error\n";
         }
-    } while (opcion != 0);
 
-    return 0;
+    }while(op!=0);
 }
